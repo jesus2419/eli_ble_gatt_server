@@ -70,8 +70,8 @@ class _MyAppState extends State<MyApp> {
                   await requestBlePermissions();
 
                   await EliBleGattServer.configure(
-                    serviceUuid: '00002902-0000-1000-8000-00805f9b34fb',          // 16-bit
-                    characteristicUuid: '00002902-0000-1000-8000-00805f9b34fb',   // 16-bit
+                    serviceUuid: '0000FFF0-0000-1000-8000-00805f9b34fb',   // Service
+                    characteristicUuid: '0000FFF1-0000-1000-8000-00805f9b34fb', // Characteristic
                     deviceName: 'EliBLE',
                     payload: {
                       'msg': 'Hola desde Flutter',

@@ -42,14 +42,11 @@ class EliBleGattServerService : Service() {
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "BluetoothGattServiceChannel"
 
-        // UUIDs para el servicio y características
 
-        // uiid de 16 bits
+        // uiid 16 bits
         
         val DESCRIPTOR_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
-        // Nombre del dispositivo
-        //const val DEVICE_NAME = "DispositivoBLEUrbanito"
 
         lateinit var SERVICE_UUID: UUID
         lateinit var CHARACTERISTIC_UUID: UUID
@@ -83,15 +80,6 @@ class EliBleGattServerService : Service() {
         private val mainHandler = Handler(Looper.getMainLooper())
 
 
-        /*
-        *
-        eventSink?.success(
-    mapOf(
-        "type" to "device_connected",
-        "address" to device.address
-    )
-)
-        * */
 
     }
 
@@ -165,23 +153,7 @@ class EliBleGattServerService : Service() {
         }
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    fun sendPaidTarifa(tarifaRaw: String) {
 
-        Log.d(TAG, "💰 Tarifa RAW recibida: $tarifaRaw")
-
-        // 🔹 Limpiar prefijo si viene incluido
-        val tarifa = tarifaRaw
-            .replace("TARIFA:", "")
-            .trim()
-
-        // 🔹 JSON válido SIEMPRE
-        val jsonPaid = """{"paid":"$tarifa"}\n"""
-
-        Log.d(TAG, "📤 JSON generado: $jsonPaid")
-
-        sendMessageToConnectedDevices(jsonPaid)
-    }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun sendMessageToConnectedDevices(message: String) {
@@ -194,7 +166,7 @@ class EliBleGattServerService : Service() {
         val service = bluetoothGattServer?.getService(SERVICE_UUID) ?: return
         val characteristic = service.getCharacteristic(CHARACTERISTIC_UUID) ?: return
 
-        // 🔒 BLE REAL: 20 bytes por NOTIFY
+        // BLE REAL: 20 bytes por NOTIFY
         val chunkSize = 20
 
         val payload = message.toByteArray(Charsets.UTF_8)
@@ -231,8 +203,7 @@ class EliBleGattServerService : Service() {
                 )
             }
 
-
-            // ⏱ pequeño delay para no saturar BLE
+            //delay
             Thread.sleep(30)
         }
     }
@@ -266,8 +237,8 @@ class EliBleGattServerService : Service() {
 
     private fun createNotification(): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("🔵 Servidor Bluetooth GATT Activo")
-            .setContentText("Dispositivo: ")
+            .setContentTitle("Bluetooth GATT Active")
+            .setContentText("Device: ")
             .setSmallIcon(R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
@@ -277,20 +248,20 @@ class EliBleGattServerService : Service() {
     }
 
     private fun initializeBluetooth() {
-        Log.i(TAG, "🔄 Inicializando Bluetooth...")
+        Log.i(TAG, "Starting Bluetooth...")
 
         try {
             bluetoothManager = getSystemService(BluetoothManager::class.java)
             bluetoothAdapter = bluetoothManager?.adapter
 
             if (bluetoothAdapter == null) {
-                Log.e(TAG, "❌ Bluetooth no soportado en este dispositivo")
+                Log.e(TAG, "Bluetooth Cannot be initialized")
                 updateServerState(false)
                 return
             }
 
             if (!bluetoothAdapter!!.isEnabled) {
-                Log.e(TAG, "❌ Bluetooth no está habilitado")
+                Log.e(TAG, "Bluetooth is disabled")
                 updateServerState(false)
                 return
             }
@@ -298,7 +269,7 @@ class EliBleGattServerService : Service() {
             bluetoothLeAdvertiser = bluetoothAdapter?.bluetoothLeAdvertiser
 
             if (bluetoothLeAdvertiser == null) {
-                Log.e(TAG, "❌ Bluetooth LE Advertising no soportado")
+                Log.e(TAG, "Bluetooth LE Advertising not supported")
                 updateServerState(false)
                 return
             }
@@ -307,10 +278,10 @@ class EliBleGattServerService : Service() {
             startAdvertising()
 
         } catch (e: SecurityException) {
-            Log.e(TAG, "🔒 Error de seguridad: ${e.message}")
+            Log.e(TAG, "Security breach: ${e.message}")
             updateServerState(false)
         } catch (e: Exception) {
-            Log.e(TAG, "💥 Error inicializando Bluetooth: ${e.message}")
+            Log.e(TAG, "Bluetooth error: ${e.message}")
             updateServerState(false)
         }
     }
@@ -321,7 +292,7 @@ class EliBleGattServerService : Service() {
         isAdvertisingActive = isActive
 
         if (wasActive != isActive) {
-            Log.i(TAG, if (isActive) "✅ Servidor ACTIVADO" else "⏸ Servidor DESACTIVADO")
+            Log.i(TAG, if (isActive) "Server active" else "⏸ Server inactive")
 
             // Notificar cambio de estado
             onServerStateChanged?.invoke(isActive)
@@ -334,8 +305,8 @@ class EliBleGattServerService : Service() {
     private fun updateNotification(isActive: Boolean) {
         val notification = if (isActive) {
             NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("🔵 Servidor BLE Activo")
-                .setContentText("$ - ${connectedDevices.size} dispositivo(s) conectado(s)")
+                .setContentTitle("Ble server active")
+                .setContentText("$ - ${connectedDevices.size} devices(s) connected")
                 .setSmallIcon(R.drawable.ic_dialog_info)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(true)
@@ -343,8 +314,8 @@ class EliBleGattServerService : Service() {
                 .build()
         } else {
             NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("⚪ Servidor BLE Inactivo")
-                .setContentText("Servicio detenido")
+                .setContentTitle("Ble server inactive")
+                .setContentText("Server stoped")
                 .setSmallIcon(R.drawable.ic_dialog_info)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(false)
@@ -355,21 +326,21 @@ class EliBleGattServerService : Service() {
         notificationManager?.notify(NOTIFICATION_ID, notification)
     }
 
-    // Función para establecer callback de cambio de estado
+    // stablish callback for server state changes
     fun setServerStateCallback(callback: (Boolean) -> Unit) {
         onServerStateChanged = callback
-        // Notificar estado actual inmediatamente
+        // notify current state immediately
         callback(isServerActive)
     }
 
-    // Función para establecer callback de cambio de conexiones
+    // stablish callback for connection changes
     fun setConnectionCallback(callback: (List<String>) -> Unit) {
         onConnectionChanged = callback
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private fun setupGattServer() {
-        Log.i(TAG, "🛠 Configurando servidor GATT...")
+        Log.i(TAG, "stablish GATT...")
 
 
 
@@ -380,7 +351,7 @@ class EliBleGattServerService : Service() {
             bluetoothGattServer = bluetoothManager?.openGattServer(this, gattServerCallback)
 
             if (bluetoothGattServer == null) {
-                Log.e(TAG, "❌ No se pudo crear el servidor GATT")
+                Log.e(TAG, "could not open GATT server")
                 return
             }
 
@@ -403,9 +374,6 @@ class EliBleGattServerService : Service() {
                 BluetoothGattDescriptor.PERMISSION_READ or
                         BluetoothGattDescriptor.PERMISSION_WRITE
             )
-
-            // Configurar valor inicial del descriptor para notificaciones habilitadas
-            //descriptor.value = android.bluetooth.BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             characteristic.addDescriptor(descriptor)
             service.addCharacteristic(characteristic)
 
@@ -433,32 +401,33 @@ class EliBleGattServerService : Service() {
 
         bluetoothLeAdvertiser?.let { advertiser ->
             try {
-                // Configurar nombre del dispositivo
-                /*
+                // Configure device name
+                
                 try {
                     if (ActivityCompat.checkSelfPermission(
                             this,
                             Manifest.permission.BLUETOOTH_CONNECT
                         ) == PackageManager.PERMISSION_GRANTED
                     ) {
-                        // Guardar nombre original si no está guardado
+                        // save original name
                         if (originalDeviceName == null) {
                             originalDeviceName = bluetoothAdapter?.name
                         }
 
-                        // Cambiar nombre del dispositivo
+                        // change device´s name
                         val setNameSuccess = bluetoothAdapter?.setName(DEVICE_NAME)
                         Log.i(TAG, if (setNameSuccess == true)
-                            "✅ Nombre cambiado a: $DEVICE_NAME"
-                        else "⚠ No se pudo cambiar el nombre")
+                            "Name changed to: $DEVICE_NAME"
+                        else "could not change device name"
+                        )
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "⚠ No se pudo cambiar el nombre del dispositivo: ${e.message}")
+                    Log.w(TAG, "could not change device name: ${e.message}")
                 }
-                */
+                
 
 
-                // Configuración del advertising
+                // settings advertising
                 val settings = AdvertiseSettings.Builder()
                     .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
                     .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
@@ -466,20 +435,20 @@ class EliBleGattServerService : Service() {
                     .setTimeout(0) // 0 = sin timeout
                     .build()
 
-                // Datos del advertising
+                // Data advertising
                 val advertiseData = AdvertiseData.Builder()
                     .setIncludeDeviceName(true)
                     .addServiceUuid(ParcelUuid(SERVICE_UUID))
                     .build()
 
-                // Datos de respuesta al scan
+                // awnser data
                 val scanResponse = AdvertiseData.Builder()
                     .addManufacturerData(0xFFFF, "BLE_GATT_SERVER".toByteArray())
                     .build()
 
-                // Iniciar advertising
+                // Start advertising
                 advertiser.startAdvertising(settings, advertiseData, scanResponse, advertiseCallback)
-                Log.i(TAG, "📡 Advertising iniciado")
+                Log.i(TAG, "📡 Advertising started")
 
             } catch (e: SecurityException) {
                 Log.e(TAG, "🔒 Error de seguridad en advertising: ${e.message}")
@@ -584,7 +553,7 @@ class EliBleGattServerService : Service() {
                     }
 
 
-                    "✅ CONECTADO"
+                    "Connected"
                     mainHandler.post {
 
                         eventSink?.success(
@@ -606,7 +575,7 @@ class EliBleGattServerService : Service() {
 
 
                     onConnectionChanged?.invoke(connectedDevices.toList())
-                    "❌ DESCONECTADO"
+                    "Disconnected"
                     mainHandler.post {
 
                         eventSink?.success(
@@ -699,11 +668,7 @@ class EliBleGattServerService : Service() {
                 val receivedValue = String(value ?: byteArrayOf())
                 Log.d(TAG, "📝 Datos recibidos de $deviceAddress: $receivedValue")
 
-                /*sendMessageToConnectedDevices(
-                    """{"status":"connected","ts":${System.currentTimeMillis()}}"""
-                )
-
-                 */
+                
 
                 // ✅ RESPONDER INMEDIATAMENTE
                 if (responseNeeded && device != null) {
@@ -725,74 +690,6 @@ class EliBleGattServerService : Service() {
                         )
                     )
                 }
-
-                if (receivedValue.startsWith("READY")) {
-                    //
-                    val jsonPayload =
-                        """{"uId":"ANDROID PAYLOAD","ord":true,"bO":31217,"dId":"2201116PG","iP":true,"bP":2,"a":[{"bId":"RELG117","pass":1,"cD":1747944074421,"dC":"N/A","price":15},{"bId":"RELG117","pass":1,"cD":1747943565016,"dC":"N/A","price":15}]}"""
-
-                    val payloadJson: String = JSONObject(payload).toString()
-
-                    sendMessageToConnectedDevices(payloadJson)
-                    //onBleMessageReceived?.invoke(receivedValue)
-
-                }
-                if (receivedValue.startsWith("JSON_OK")) {
-                    // 🚀 AVISAR A LA UI
-                    onBleMessageReceived?.invoke(receivedValue)
-
-                    mainHandler.post {
-
-                            eventSink?.success(
-                                mapOf(
-                                    "type" to "closed",
-                                    "data" to receivedValue
-                                )
-                            )
-                        }
-                }
-
-                if (receivedValue.startsWith("TARIFA:")) {
-
-                    val tarifa = receivedValue
-                        .substringAfter("TARIFA:")
-                        .toDoubleOrNull()
-
-                    if (tarifa != null) {
-                        mainHandler.post {
-
-                            eventSink?.success(
-                                mapOf(
-                                    "type" to "ble_tarifa",
-                                    "from" to deviceAddress,
-                                    "data" to receivedValue
-                                )
-                            )
-                        }
-
-
-                        Log.d(TAG, "💰 Tarifa recibida: $tarifa")
-                        /*
-                        val jsonPaid = """{"paid":$tarifa}\n"""
-
-                        Log.d(TAG, "📤 JSON generado: $jsonPaid")
-                        sendMessageToConnectedDevices(jsonPaid)
-
-
-                         */
-
-                    } else {
-                        Log.e(TAG, "❌ Formato TARIFA inválido")
-                    }
-                }
-
-
-
-
-
-
-
-
 
                 // Aquí puedes procesar los datos recibidos
                 // Por ejemplo, guardarlos, analizarlos, etc.
@@ -867,22 +764,7 @@ class EliBleGattServerService : Service() {
 
                 }
 
-                // 🚀 SOLO DESPUÉS DE RESPONDER
                 if (notificationEnabled && device != null) {
-
-                    /*sendMessageToConnectedDevices(
-                        """{"status":"connected","ts":${System.currentTimeMillis()}}"""
-                    )*/
-
-
-                    /*
-
-                    val jsonPayload = """{"uId":"uGWQpjewgEVOap7Z4UOsCnVuactc","ord":true,"bO":31217,"dId":"2201116PG","iP":true,"bP":2,"a":[{"bId":"RELG117","pass":1,"cD":1747944074421,"dC":"N/A","price":15},{"bId":"RELG117","pass":1,"cD":1747943565016,"dC":"N/A","price":15}]}"""
-                    sendMessageToConnectedDevices(jsonPayload)
-
-
-                     */
-
 
 
                 }
@@ -911,46 +793,6 @@ class EliBleGattServerService : Service() {
                 Log.w(TAG, "⚠ Error al agregar servicio GATT: $status")
             }
         }
-
-
-
-
-
-
-        /*
-        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-        fun sendMessageToConnectedDevices(message: String) {
-
-            if (connectedGattDevices.isEmpty()) {
-                Log.w(TAG, "⚠ No hay dispositivos conectados")
-                return
-            }
-
-            val service = bluetoothGattServer
-                ?.getService(SERVICE_UUID)
-
-            val characteristic = service
-                ?.getCharacteristic(CHARACTERISTIC_UUID)
-
-            if (characteristic == null) {
-                Log.e(TAG, "❌ Característica no encontrada")
-                return
-            }
-
-            characteristic.value = message.toByteArray(Charsets.UTF_8)
-
-            connectedGattDevices.forEach { device ->
-                val success = bluetoothGattServer?.notifyCharacteristicChanged(
-                    device,
-                    characteristic,
-                    false // false = NOTIFY, true = INDICATE
-                )
-
-                Log.d(TAG, "📤 NOTIFY a ${device.address} -> $success")
-            }
-        }
-
-         */
 
 
     }
