@@ -7,23 +7,43 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.EventChannel
 
 /** EliBleGattServerPlugin */
 class EliBleGattServerPlugin :
     FlutterPlugin,
     MethodCallHandler {
 
-    private lateinit var channel: MethodChannel
+    private lateinit var methodChannel: MethodChannel
+    private lateinit var eventChannel: EventChannel
     private lateinit var context: Context
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         context = binding.applicationContext
 
-        channel = MethodChannel(
+        // MethodChannel (acciones puntuales)
+        methodChannel = MethodChannel(
             binding.binaryMessenger,
             "eli_ble_gatt_server"
         )
-        channel.setMethodCallHandler(this)
+        methodChannel.setMethodCallHandler(this)
+
+        // EventChannel (eventos BLE en tiempo real)
+        eventChannel = EventChannel(
+            binding.binaryMessenger,
+            "eli_ble_gatt_server/events"
+        )
+
+        eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                // Conectamos el Service con Flutter
+                EliBleGattServerService.eventSink = events
+            }
+
+            override fun onCancel(arguments: Any?) {
+                EliBleGattServerService.eventSink = null
+            }
+        })
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
@@ -32,6 +52,7 @@ class EliBleGattServerPlugin :
             "getPlatformVersion" -> {
                 result.success("Android ${android.os.Build.VERSION.RELEASE}")
             }
+
             "configureServer" -> {
                 val serviceUuid = call.argument<String>("serviceUuid")!!
                 val characteristicUuid = call.argument<String>("characteristicUuid")!!
@@ -47,7 +68,6 @@ class EliBleGattServerPlugin :
 
                 result.success(true)
             }
-
 
             "startServer" -> {
                 val intent = Intent(context, EliBleGattServerService::class.java)
@@ -66,6 +86,7 @@ class EliBleGattServerPlugin :
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        channel.setMethodCallHandler(null)
+        methodChannel.setMethodCallHandler(null)
+        EliBleGattServerService.eventSink = null
     }
 }

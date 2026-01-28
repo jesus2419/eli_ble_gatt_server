@@ -1,9 +1,30 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart'; // debugPrint
 import 'package:flutter/services.dart';
 
 class EliBleGattServer {
   static const MethodChannel _channel =
       MethodChannel('eli_ble_gatt_server');
+
+  static const EventChannel _eventChannel =
+      EventChannel('eli_ble_gatt_server/events');
+
+  static Stream<dynamic>? _eventStream;
+
+  /// Stream público de eventos BLE (con logging)
+  static Stream<dynamic> get events {
+    _eventStream ??= _eventChannel
+        .receiveBroadcastStream()
+        .map((event) {
+          debugPrint(
+            '[EliBleGattServer][EVENT] '
+            '${DateTime.now().toIso8601String()} → $event',
+          );
+          return event;
+        });
+
+    return _eventStream!;
+  }
 
   /// Solo para probar conexión
   static Future<String?> getPlatformVersion() async {

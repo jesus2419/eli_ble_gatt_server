@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:eli_ble_gatt_server/eli_ble_gatt_server.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:eli_ble_gatt_server/eli_ble_gatt_server_events.dart';
 
 
 void main() {
@@ -27,15 +28,30 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
+  late StreamSubscription sub;
+
 
   @override
   void initState() {
     super.initState();
+      sub = EliBleGattServer.events.listen((event) {
+      print('BLE EVENT → $event');
+    });
+  
     initPlatformState();
+  }
+
+
+  @override
+  void dispose() {
+    sub.cancel();
+    super.dispose();
   }
 
   Future<void> initPlatformState() async {
     String platformVersion;
+
+    
 
     try {
       platformVersion =
