@@ -16,6 +16,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  permission_handler: ^11.3.0
+
 
   eli_ble_gatt_server:
     # When depending on this package from a real application you should use:

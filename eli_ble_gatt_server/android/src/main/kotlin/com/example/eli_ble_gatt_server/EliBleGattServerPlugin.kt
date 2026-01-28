@@ -32,6 +32,22 @@ class EliBleGattServerPlugin :
             "getPlatformVersion" -> {
                 result.success("Android ${android.os.Build.VERSION.RELEASE}")
             }
+            "configureServer" -> {
+                val serviceUuid = call.argument<String>("serviceUuid")!!
+                val characteristicUuid = call.argument<String>("characteristicUuid")!!
+                val deviceName = call.argument<String>("deviceName")
+                val payload = call.argument<Map<String, Any>>("payload")
+
+                EliBleGattServerService.configure(
+                    serviceUuid,
+                    characteristicUuid,
+                    deviceName,
+                    payload
+                )
+
+                result.success(true)
+            }
+
 
             "startServer" -> {
                 val intent = Intent(context, EliBleGattServerService::class.java)

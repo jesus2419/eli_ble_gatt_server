@@ -1,3 +1,29 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="com.example.eli_ble_gatt_server">
+  <!-- 🔐 Permisos BLE -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+
+    <!-- Android 12+ -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+
+    <!--  foreground service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+
+    <!-- legacy BLE) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <application>
+
+        <!-- 🔵 REGISTRO DEL SERVICE -->
+        <service
+            android:name=".EliBleGattServerService"
+            android:exported="false"
+            android:enabled="true"
+            android:foregroundServiceType="connectedDevice" />
+
+    </application>
 </manifest>
