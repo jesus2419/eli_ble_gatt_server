@@ -34,9 +34,41 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-      sub = EliBleGattServer.events.listen((event) {
-      print('BLE EVENT → $event');
+    sub = EliBleGattServer.events.listen((event) {
+      switch (event) {
+        case BleAdvertisingEvent e:
+          print("Advertising: ${e.status}");
+          break;
+
+        case BleDeviceConnectedEvent e:
+          print("Connected: ${e.name} (${e.address}) total=${e.total}");
+          break;
+
+        case BleDeviceDisconnectedEvent e:
+          print("Disconnected: ${e.address} total=${e.total}");
+          break;
+
+        case BleRxEvent e:
+          print("RX from ${e.from}: ${e.data}");
+          break;
+
+        case BleTxEvent e:
+          print("TX chunk=${e.chunkSize} offset=${e.offset}/${e.total}");
+          break;
+
+        case BleServerInfoEvent e:
+          print("Server info: ${e.deviceName} active=${e.serverActive}");
+          break;
+
+        case BleServiceDestroyedEvent _:
+          print("Service destroyed");
+          break;
+
+        default:
+          print("Unknown event: ${event.type}");
+      }
     });
+
   
     initPlatformState();
   }
@@ -85,7 +117,7 @@ class _MyAppState extends State<MyApp> {
                 onPressed: () async {
                   await requestBlePermissions();
 
-                  await EliBleGattServer.configure(
+                  await EliBleGattServer.configure_and_start(
                     serviceUuid: '0000FFF0-0000-1000-8000-00805f9b34fb',   // Service
                     characteristicUuid: '0000FFF1-0000-1000-8000-00805f9b34fb', // Characteristic
                     deviceName: 'EliBLE',
@@ -96,17 +128,9 @@ class _MyAppState extends State<MyApp> {
                   );
 
                 },
-                child: const Text('Configure'),
+                child: const Text('Start BLE GATT SERVER'),
               ),
 
-              ElevatedButton(
-                onPressed: () async {
-                  await requestBlePermissions();
-
-                  await EliBleGattServer.start();
-                },
-                child: const Text('Start Server'),
-              ),
 
               ElevatedButton(
                 onPressed: () async {

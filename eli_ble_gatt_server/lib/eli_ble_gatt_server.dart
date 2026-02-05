@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart'; // debugPrint
 import 'package:flutter/services.dart';
+import 'eli_ble_gatt_server_events.dart';
+
 
 class EliBleGattServer {
   static const MethodChannel _channel =
@@ -9,29 +11,28 @@ class EliBleGattServer {
   static const EventChannel _eventChannel =
       EventChannel('eli_ble_gatt_server/events');
 
-  static Stream<dynamic>? _eventStream;
+  static Stream<BleEvent>? _eventStream;
 
-  /// Stream público de eventos BLE (con logging)
-  static Stream<dynamic> get events {
-    _eventStream ??= _eventChannel
-        .receiveBroadcastStream()
-        .map((event) {
-          debugPrint(
-            '[EliBleGattServer][EVENT] '
-            '${DateTime.now().toIso8601String()} → $event',
-          );
-          return event;
-        });
+  /// Stream tipado
+  static Stream<BleEvent> get events {
+    _eventStream ??= _eventChannel.receiveBroadcastStream().map((raw) {
+      final event = BleEvent.from(raw);
+
+      debugPrint(
+        '[EliBleGattServer][EVENT] '
+        '${DateTime.now().toIso8601String()} → ${event.type}',
+      );
+
+      return event;
+    });
 
     return _eventStream!;
   }
 
-  /// Solo para probar conexión
   static Future<String?> getPlatformVersion() async {
     return await _channel.invokeMethod<String>('getPlatformVersion');
   }
 
-  /// CONFIGURA el servidor (OBLIGATORIO antes de iniciar)
   static Future<void> configure({
     required String serviceUuid,
     required String characteristicUuid,
@@ -46,12 +47,26 @@ class EliBleGattServer {
     });
   }
 
-  /// Arranca el GATT Server
+    static Future<void> configure_and_start({
+    required String serviceUuid,
+    required String characteristicUuid,
+    String? deviceName,
+    Map<String, dynamic>? payload,
+  }) async {
+    await _channel.invokeMethod('configureServer', {
+      'serviceUuid': serviceUuid,
+      'characteristicUuid': characteristicUuid,
+      'deviceName': deviceName,
+      'payload': payload,
+    });
+
+    await start();
+  }
+
   static Future<void> start() async {
     await _channel.invokeMethod('startServer');
   }
 
-  /// Detiene el GATT Server
   static Future<void> stop() async {
     await _channel.invokeMethod('stopServer');
   }
