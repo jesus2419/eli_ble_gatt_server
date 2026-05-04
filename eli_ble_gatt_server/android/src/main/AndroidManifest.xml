@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="com.example.eli_ble_gatt_server">
+  package="io.github.jesus2419.eli_ble_gatt_server">
   <!-- 🔐 Permisos BLE -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />

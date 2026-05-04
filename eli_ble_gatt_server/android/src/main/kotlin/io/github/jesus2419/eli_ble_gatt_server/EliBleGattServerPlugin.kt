@@ -1,4 +1,4 @@
-package com.example.eli_ble_gatt_server
+package io.github.jesus2419.eli_ble_gatt_server
 
 import android.Manifest
 import android.content.Context
