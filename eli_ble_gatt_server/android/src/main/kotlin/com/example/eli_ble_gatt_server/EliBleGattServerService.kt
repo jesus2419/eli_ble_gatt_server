@@ -83,6 +83,9 @@ class EliBleGattServerService : Service() {
 
         var eventSink: EventChannel.EventSink? = null
         private val mainHandler = Handler(Looper.getMainLooper())
+
+        // Reference to the running service instance — used by the plugin to call instance methods
+        var instance: EliBleGattServerService? = null
     }
 
     private var bluetoothManager: BluetoothManager? = null
@@ -115,6 +118,7 @@ class EliBleGattServerService : Service() {
         super.onCreate()
         Log.i(TAG, "Bluetooth GATT service created")
 
+        instance = this
         createNotificationChannel()
         startForegroundServiceWithType()
         isRunning = true
@@ -149,7 +153,7 @@ class EliBleGattServerService : Service() {
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    fun sendMessageToConnectedDevices(message: String) {
+    internal fun sendMessageToConnectedDevices(message: String) {
         if (connectedGattDevices.isEmpty()) {
             Log.w(TAG, "No connected devices")
             return
@@ -891,6 +895,7 @@ class EliBleGattServerService : Service() {
             )
         }
         isRunning = false
+        instance = null
 
         super.onDestroy()
         Log.i(TAG, "Service destroyed")

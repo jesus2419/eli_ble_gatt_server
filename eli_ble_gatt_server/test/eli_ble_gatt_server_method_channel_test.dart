@@ -24,6 +24,7 @@ void main() {
         case 'configureServer':
         case 'startServer':
         case 'stopServer':
+        case 'sendMessage':
           return true;
         default:
           return null;
@@ -61,5 +62,9 @@ void main() {
 
   test('stop completes without error', () async {
     await expectLater(platform.stop(), completes);
+  });
+
+  test('sendMessage completes without error', () async {
+    await expectLater(platform.sendMessage('hello world'), completes);
   });
 }

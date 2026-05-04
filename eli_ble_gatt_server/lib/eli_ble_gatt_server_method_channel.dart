@@ -59,4 +59,10 @@ class MethodChannelEliBleGattServer extends EliBleGattServerPlatform {
         .invokeMapMethod<String, dynamic>('getServerStatus');
     return result ?? {};
   }
+
+  @override
+  Future<void> sendMessage(String message) async {
+    await methodChannel
+        .invokeMethod<void>('sendMessage', {'message': message});
+  }
 }

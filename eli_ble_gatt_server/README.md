@@ -15,9 +15,9 @@ A Flutter plugin that turns an **Android device into a BLE GATT Server** (periph
 - Start a BLE GATT Server as an Android **foreground service**
 - Advertise a **custom Service UUID** and device name
 - Expose a **Characteristic UUID** with READ / WRITE / NOTIFY
-- **Receive data** written by BLE clients (RX events)
-- **Send notifications** to all connected clients (TX via payload)
-- Automatically send a **welcome payload** to each client that enables notifications
+- **Receive data** written by BLE clients (`BleRxEvent`)
+- **Send notifications** to all connected clients at any time with `sendMessage()`
+- Automatically send a **welcome payload** (JSON) to each client that enables notifications
 - Query server state at any time with `getServerStatus()`
 - Typed event stream (`Stream<BleEvent>`) — no raw maps
 
@@ -111,11 +111,19 @@ await EliBleGattServer.configureAndStart(
   serviceUuid: serviceUuid,
   characteristicUuid: characteristicUuid,
   deviceName: 'MyBleDevice',
-  // payload is sent automatically to each client that enables notifications
+  // payload is sent automatically as the first notification to each client
+  // that enables notifications on the characteristic (CCCD write)
   payload: {'hello': 'world', 'version': 1},
 );
 
-// Later, stop the server
+// Send a message to all connected clients at any time
+await EliBleGattServer.sendMessage('ping');
+
+// Query server state without relying on the event stream
+final status = await EliBleGattServer.getServerStatus();
+print('Connected devices: ${status['connectedDevices']}');
+
+// Stop the server
 await EliBleGattServer.stop();
 ```
 
@@ -130,6 +138,7 @@ await EliBleGattServer.stop();
 | `configureAndStart({...})` | Configure + start in one call. |
 | `stop()` | Stop the server and cancel advertising. |
 | `getServerStatus()` | Returns a `Map<String, dynamic>` with current state. |
+| `sendMessage(String)` | Send a text notification to all connected clients. |
 | `events` | `Stream<BleEvent>` — real-time typed event stream. |
 
 #### `configure` / `configureAndStart` parameters
@@ -171,14 +180,36 @@ All events extend `BleEvent` with a `type` string field. Use pattern matching or
 
 ## How notifications (TX) work
 
-BLE has a maximum notification payload of 20 bytes per packet. When the server needs to send more data (e.g. a large `payload`), it automatically splits it into 20-byte chunks with a 30 ms delay between each chunk. Your client must reassemble the chunks. Each chunk triggers a `BleTxEvent` on the stream.
+BLE has a maximum notification payload of 20 bytes per packet. Both `sendMessage()` and the welcome `payload` split data into 20-byte chunks with a 30 ms delay between each one. Each chunk triggers a `BleTxEvent` on the stream. Your client is responsible for reassembling chunks into the full message.
+
+```
+Server                          Client
+  │── chunk 1 (20 B) ──────────▶│
+  │   BleTxEvent(offset=20)      │
+  │── chunk 2 (20 B) ──────────▶│
+  │   BleTxEvent(offset=40)      │
+  │── chunk 3 (N B)  ──────────▶│
+  │   BleTxEvent(offset=total)   │
+```
+
+## Receiving data from clients (RX)
+
+When a BLE client writes to the characteristic, the plugin emits a `BleRxEvent`:
+
+```dart
+EliBleGattServer.events.listen((event) {
+  if (event is BleRxEvent) {
+    print('Received from ${event.from}: ${event.data}');
+  }
+});
+```
 
 ## Limitations
 
 - **Android only.** iOS support is not available yet.
 - **BLE Peripheral Mode** must be supported by the device hardware (most modern Android phones support it; some tablets and emulators do not).
-- **TX chunk size** is fixed at 20 bytes (standard BLE MTU before negotiation).
-- The plugin does not expose a method to send arbitrary notifications after startup. Notifications are triggered by the `payload` configured at startup.
+- **TX chunk size** is fixed at 20 bytes (standard BLE MTU before negotiation). MTU negotiation is not yet exposed.
+- `sendMessage()` sends to **all** connected clients simultaneously. Per-device addressing is not yet supported.
 
 ## Example app
 

@@ -44,4 +44,12 @@ abstract class EliBleGattServerPlatform extends PlatformInterface {
   /// `isActive`, `advertising`, `connectedDevices`, `deviceName`,
   /// `serviceUuid`, `characteristicUuid`.
   Future<Map<String, dynamic>> getServerStatus();
+
+  /// Send a text [message] as BLE notifications to all connected clients.
+  ///
+  /// The message is split into 20-byte chunks automatically.
+  /// Each chunk emits a [BleTxEvent] on the event stream.
+  /// Throws [PlatformException] with code `SERVICE_NOT_RUNNING` if the server
+  /// is not active.
+  Future<void> sendMessage(String message);
 }

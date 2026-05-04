@@ -11,6 +11,10 @@
 - **`getServerStatus()`**: new method that returns the current server state without
   relying on the event stream. Returns `isActive`, `advertising`, `connectedDevices`,
   `deviceName`, `serviceUuid`, and `characteristicUuid`.
+- **`sendMessage(String message)`**: send an arbitrary text notification to all currently
+  connected BLE clients at any time. The message is split into 20-byte chunks
+  automatically and each chunk emits a `BleTxEvent` on the event stream. Throws
+  `PlatformException(SERVICE_NOT_RUNNING)` if called when the server is stopped.
 
 ### Bug fixes
 - **Fixed double GATT response**: `onCharacteristicWriteRequest` was calling

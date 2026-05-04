@@ -35,6 +35,9 @@ class MockEliBleGattServerPlatform
         'serviceUuid': '0000FFF0-0000-1000-8000-00805F9B34FB',
         'characteristicUuid': '0000FFF1-0000-1000-8000-00805F9B34FB',
       };
+
+  @override
+  Future<void> sendMessage(String message) async {}
 }
 
 void main() {

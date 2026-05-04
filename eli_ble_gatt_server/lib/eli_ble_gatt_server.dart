@@ -79,4 +79,13 @@ class EliBleGattServer {
   /// - `characteristicUuid` (`String?`) — configured characteristic UUID.
   static Future<Map<String, dynamic>> getServerStatus() =>
       EliBleGattServerPlatform.instance.getServerStatus();
+
+  /// Send a text [message] as BLE notifications to all connected clients.
+  ///
+  /// The message is automatically split into 20-byte chunks (BLE MTU limit).
+  /// Each chunk emits a [BleTxEvent] on the [events] stream so you can track
+  /// progress. Throws [PlatformException] with code `SERVICE_NOT_RUNNING` if
+  /// the server has not been started.
+  static Future<void> sendMessage(String message) =>
+      EliBleGattServerPlatform.instance.sendMessage(message);
 }
