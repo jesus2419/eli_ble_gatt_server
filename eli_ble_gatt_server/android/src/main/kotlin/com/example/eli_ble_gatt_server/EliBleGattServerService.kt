@@ -52,6 +52,20 @@ class EliBleGattServerService : Service() {
         var payload: Map<*, *>? = null
         var isRunning = false
 
+        // Static status mirrors — updated by the service instance so the plugin can query them without binding
+        var serverActive = false
+        var advertisingActive = false
+        var connectedDeviceCount = 0
+
+        fun getStatusMap(): Map<String, Any?> = mapOf(
+            "isActive" to serverActive,
+            "advertising" to advertisingActive,
+            "connectedDevices" to connectedDeviceCount,
+            "deviceName" to if (::DEVICE_NAME.isInitialized) DEVICE_NAME else null,
+            "serviceUuid" to if (::SERVICE_UUID.isInitialized) SERVICE_UUID.toString() else null,
+            "characteristicUuid" to if (::CHARACTERISTIC_UUID.isInitialized) CHARACTERISTIC_UUID.toString() else null
+        )
+
         fun configure(
             serviceUuid: String,
             characteristicUuid: String,
@@ -265,6 +279,8 @@ class EliBleGattServerService : Service() {
         val wasActive = isServerActive
         isServerActive = isActive
         isAdvertisingActive = isActive
+        serverActive = isActive
+        advertisingActive = isActive
 
         if (wasActive != isActive) {
             Log.i(TAG, if (isActive) "Server active" else "Server inactive")
@@ -505,6 +521,7 @@ class EliBleGattServerService : Service() {
                     if (!connectedDevices.contains(deviceAddress)) {
                         connectedDevices.add(deviceAddress)
                         connectedGattDevices.add(device)
+                        connectedDeviceCount = connectedDevices.size
                         onConnectionChanged?.invoke(connectedDevices.toList())
                     }
 
@@ -524,6 +541,7 @@ class EliBleGattServerService : Service() {
                     // Remove device from list
                     connectedDevices.remove(deviceAddress)
                     connectedGattDevices.remove(device)
+                    connectedDeviceCount = connectedDevices.size
                     onConnectionChanged?.invoke(connectedDevices.toList())
                     "Disconnected"
                     mainHandler.post {
@@ -633,23 +651,6 @@ class EliBleGattServerService : Service() {
                         )
                     )
                 }
-
-                // Here you can process the received data
-                // For example, save it, analyze it, etc.
-
-                if (responseNeeded && ActivityCompat.checkSelfPermission(
-                        this@EliBleGattServerService,
-                        Manifest.permission.BLUETOOTH_CONNECT
-                    ) == PackageManager.PERMISSION_GRANTED
-                ) {
-                    bluetoothGattServer?.sendResponse(
-                        device,
-                        requestId,
-                        BluetoothGatt.GATT_SUCCESS,
-                        offset,
-                        null
-                    )
-                }
             }
         }
 
@@ -702,7 +703,26 @@ class EliBleGattServerService : Service() {
                 }
 
                 if (notificationEnabled && device != null) {
-                    // Handle notification enabled
+                    val currentPayload = payload
+                    if (currentPayload != null) {
+                        val connectedDevice = device
+                        Thread {
+                            Thread.sleep(100)
+                            if (ActivityCompat.checkSelfPermission(
+                                    this@EliBleGattServerService,
+                                    Manifest.permission.BLUETOOTH_CONNECT
+                                ) == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                try {
+                                    @Suppress("UNCHECKED_CAST")
+                                    val json = org.json.JSONObject(currentPayload as Map<String, Any>).toString()
+                                    sendPayloadToDevice(connectedDevice, json)
+                                } catch (e: Exception) {
+                                    Log.w(TAG, "Could not send payload: ${e.message}")
+                                }
+                            }
+                        }.start()
+                    }
                 }
             }
         }
@@ -722,6 +742,38 @@ class EliBleGattServerService : Service() {
             } else {
                 Log.w(TAG, "Error adding GATT service: $status")
             }
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    private fun sendPayloadToDevice(device: BluetoothDevice, message: String) {
+        val service = bluetoothGattServer?.getService(SERVICE_UUID) ?: return
+        val characteristic = service.getCharacteristic(CHARACTERISTIC_UUID) ?: return
+
+        val chunkSize = 20
+        val bytes = message.toByteArray(Charsets.UTF_8)
+        var offset = 0
+
+        Log.d(TAG, "Sending payload to ${device.address} (${bytes.size} bytes)")
+
+        while (offset < bytes.size) {
+            val size = minOf(chunkSize, bytes.size - offset)
+            val chunk = bytes.copyOfRange(offset, offset + size)
+            characteristic.value = chunk
+            bluetoothGattServer?.notifyCharacteristicChanged(device, characteristic, false)
+            val sentOffset = offset + size
+            mainHandler.post {
+                eventSink?.success(
+                    mapOf(
+                        "type" to "ble_tx",
+                        "chunk_size" to size,
+                        "offset" to sentOffset,
+                        "total" to bytes.size
+                    )
+                )
+            }
+            offset += size
+            Thread.sleep(30)
         }
     }
 

@@ -1,15 +1,13 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:eli_ble_gatt_server/eli_ble_gatt_server.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:eli_ble_gatt_server/eli_ble_gatt_server_events.dart';
-
 
 void main() {
   runApp(const MyApp());
 }
+
 Future<void> requestBlePermissions() async {
   if (await Permission.bluetoothConnect.isDenied ||
       await Permission.bluetoothAdvertise.isDenied) {
@@ -19,6 +17,7 @@ Future<void> requestBlePermissions() async {
     ].request();
   }
 }
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -27,121 +26,110 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  late StreamSubscription sub;
-
+  final List<String> _log = [];
+  late final StreamSubscription<BleEvent> _sub;
 
   @override
   void initState() {
     super.initState();
-    sub = EliBleGattServer.events.listen((event) {
+    _sub = EliBleGattServer.events.listen((event) {
+      String message;
       switch (event) {
         case BleAdvertisingEvent e:
-          print("Advertising: ${e.status}");
-          break;
-
+          message = 'Advertising: ${e.status}';
         case BleDeviceConnectedEvent e:
-          print("Connected: ${e.name} (${e.address}) total=${e.total}");
-          break;
-
+          message = 'Connected: ${e.name} (${e.address}) total=${e.total}';
         case BleDeviceDisconnectedEvent e:
-          print("Disconnected: ${e.address} total=${e.total}");
-          break;
-
+          message = 'Disconnected: ${e.address} remaining=${e.total}';
         case BleRxEvent e:
-          print("RX from ${e.from}: ${e.data}");
-          break;
-
+          message = 'RX from ${e.from}: ${e.data}';
         case BleTxEvent e:
-          print("TX chunk=${e.chunkSize} offset=${e.offset}/${e.total}");
-          break;
-
+          message = 'TX chunk=${e.chunkSize} offset=${e.offset}/${e.total}';
         case BleServerInfoEvent e:
-          print("Server info: ${e.deviceName} active=${e.serverActive}");
-          break;
-
+          message =
+              'Server info — active=${e.serverActive} devices=${e.connectedDevices}';
         case BleServiceDestroyedEvent _:
-          print("Service destroyed");
-          break;
-
+          message = 'Service destroyed';
         default:
-          print("Unknown event: ${event.type}");
+          message = 'Unknown event: ${event.type}';
       }
+      setState(() => _log.insert(0, message));
     });
-
-  
-    initPlatformState();
   }
-
 
   @override
   void dispose() {
-    sub.cancel();
+    _sub.cancel();
     super.dispose();
   }
 
-  Future<void> initPlatformState() async {
-    String platformVersion;
+  Future<void> _startServer() async {
+    await requestBlePermissions();
+    await EliBleGattServer.configureAndStart(
+      serviceUuid: '0000FFF0-0000-1000-8000-00805F9B34FB',
+      characteristicUuid: '0000FFF1-0000-1000-8000-00805F9B34FB',
+      deviceName: 'EliBLE',
+      payload: {
+        'msg': 'Hello from Flutter',
+        'version': 1,
+      },
+    );
+  }
 
-    
+  Future<void> _stopServer() async {
+    await EliBleGattServer.stop();
+  }
 
-    try {
-      platformVersion =
-          await EliBleGattServer.getPlatformVersion() ??
-              'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
+  Future<void> _queryStatus() async {
+    final status = await EliBleGattServer.getServerStatus();
+    setState(() => _log.insert(0,
+        'Status — active=${status['isActive']} devices=${status['connectedDevices']}'));
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Running on: $_platformVersion\n'),
-
-              ElevatedButton(
-                onPressed: () async {
-                  await requestBlePermissions();
-
-                  await EliBleGattServer.configure_and_start(
-                    serviceUuid: '0000FFF0-0000-1000-8000-00805f9b34fb',   // Service
-                    characteristicUuid: '0000FFF1-0000-1000-8000-00805f9b34fb', // Characteristic
-                    deviceName: 'EliBLE',
-                    payload: {
-                      'msg': 'Hola desde Flutter',
-                      'value': 42,
-                    },
-                  );
-
-                },
-                child: const Text('Start BLE GATT SERVER'),
+        appBar: AppBar(title: const Text('eli_ble_gatt_server example')),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  ElevatedButton(
+                    onPressed: _startServer,
+                    child: const Text('Start Server'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _stopServer,
+                    child: const Text('Stop Server'),
+                  ),
+                  OutlinedButton(
+                    onPressed: _queryStatus,
+                    child: const Text('Get Status'),
+                  ),
+                ],
               ),
-
-
-              ElevatedButton(
-                onPressed: () async {
-                  await EliBleGattServer.stop();
-                },
-                child: const Text('Stop Server'),
+            ),
+            const Divider(),
+            Expanded(
+              child: ListView.builder(
+                reverse: false,
+                itemCount: _log.length,
+                itemBuilder: (_, i) => Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                  child: Text(
+                    _log[i],
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                  ),
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-
       ),
     );
   }

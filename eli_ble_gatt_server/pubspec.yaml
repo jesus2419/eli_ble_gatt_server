@@ -1,7 +1,7 @@
 name: eli_ble_gatt_server
-description: "A new Flutter plugin project."
-version: 0.0.1
-homepage:
+description: "Flutter plugin to turn an Android device into a BLE GATT Server peripheral. Supports advertising, custom UUIDs, READ/WRITE/NOTIFY, and real-time event streaming."
+version: 0.1.0
+homepage: https://github.com/jesus2419/eli_ble_gatt_server
 
 environment:
   sdk: ^3.9.2
@@ -36,8 +36,6 @@ flutter:
     platforms:
       android:
         package: com.example.eli_ble_gatt_server
-        pluginClass: EliBleGattServerPlugin
-      ios:
         pluginClass: EliBleGattServerPlugin
 
   # To add assets to your plugin package, add an assets section, like this:

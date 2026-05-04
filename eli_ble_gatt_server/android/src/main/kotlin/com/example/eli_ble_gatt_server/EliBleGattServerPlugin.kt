@@ -81,6 +81,10 @@ class EliBleGattServerPlugin :
                 result.success(true)
             }
 
+            "getServerStatus" -> {
+                result.success(EliBleGattServerService.getStatusMap())
+            }
+
             else -> result.notImplemented()
         }
     }
