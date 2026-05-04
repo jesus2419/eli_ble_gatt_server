@@ -1,7 +1,10 @@
-package com.example.eli_ble_gatt_server
+package io.github.jesus2419.eli_ble_gatt_server
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -78,6 +81,29 @@ class EliBleGattServerPlugin :
             "stopServer" -> {
                 val intent = Intent(context, EliBleGattServerService::class.java)
                 context.stopService(intent)
+                result.success(true)
+            }
+
+            "getServerStatus" -> {
+                result.success(EliBleGattServerService.getStatusMap())
+            }
+
+            "sendMessage" -> {
+                val message = call.argument<String>("message") ?: ""
+                val service = EliBleGattServerService.instance
+                if (service == null) {
+                    result.error("SERVICE_NOT_RUNNING", "BLE server is not running", null)
+                    return
+                }
+                Thread {
+                    if (ActivityCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.BLUETOOTH_CONNECT
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        service.sendMessageToConnectedDevices(message)
+                    }
+                }.start()
                 result.success(true)
             }
 
