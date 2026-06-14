@@ -8,7 +8,6 @@ A Flutter plugin that turns a device into a **BLE GATT Server** (peripheral). It
 |----------|-----------|
 | Android  | ✅ API 21+ (BLE Peripheral Mode required) |
 | iOS      | ✅ iOS 13+ (foreground only) |
-| Web      | ❌ No |
 
 ## Features
 
@@ -179,7 +178,7 @@ await EliBleGattServer.stop();
 
 ```dart
 {
-  'isActive': bool,           // foreground service running
+  'isActive': bool,           // server running (Android: foreground service; iOS: peripheral powered on & advertising)
   'advertising': bool,        // BLE advertising active
   'connectedDevices': int,    // number of connected clients
   'deviceName': String?,      // current device name
@@ -205,7 +204,7 @@ All events extend `BleEvent` with a `type` string field. Use pattern matching or
 
 ## How notifications (TX) work
 
-BLE has a maximum notification payload of 20 bytes per packet. Both `sendMessage()` and the welcome `payload` split data into 20-byte chunks with a 30 ms delay between each one. Each chunk triggers a `BleTxEvent` on the stream. Your client is responsible for reassembling chunks into the full message.
+BLE has a maximum notification payload of 20 bytes per packet. Both `sendMessage()` and the welcome `payload` split data into 20-byte chunks. On Android a 30 ms delay is inserted between chunks; on iOS chunks are paced by CoreBluetooth's transmit-queue backpressure (`peripheralManagerIsReadyToUpdateSubscribers`). Each chunk triggers a `BleTxEvent` on the stream. Your client is responsible for reassembling chunks into the full message.
 
 ```
 Server                          Client
