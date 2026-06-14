@@ -1,6 +1,6 @@
 name: eli_ble_gatt_server
 description: "Flutter plugin to turn a device into a BLE GATT Server peripheral (Android & iOS). Supports advertising, custom UUIDs, READ/WRITE/NOTIFY, and real-time event streaming."
-version: 0.1.0
+version: 0.2.0
 homepage: https://github.com/jesus2419/eli_ble_gatt_server
 repository: https://github.com/jesus2419/eli_ble_gatt_server
 issue_tracker: https://github.com/jesus2419/eli_ble_gatt_server/issues

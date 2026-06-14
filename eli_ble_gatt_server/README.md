@@ -24,7 +24,7 @@ A Flutter plugin that turns a device into a **BLE GATT Server** (peripheral). It
 
 ```yaml
 dependencies:
-  eli_ble_gatt_server: ^0.1.0
+  eli_ble_gatt_server: ^0.2.0
 ```
 
 ```

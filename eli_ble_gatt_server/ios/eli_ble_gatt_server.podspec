@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'eli_ble_gatt_server'
-  s.version          = '0.1.0'
+  s.version          = '0.2.0'
   s.summary          = 'Turn the device into a BLE GATT server (peripheral).'
   s.description      = <<-DESC
 A Flutter plugin that turns the device into a BLE GATT server (peripheral):

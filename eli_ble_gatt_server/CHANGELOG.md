@@ -1,3 +1,37 @@
+## 0.2.0
+
+### New features
+- **iOS support** 🎉 The plugin now runs as a BLE GATT server (peripheral) on iOS 13+
+  using CoreBluetooth (`CBPeripheralManager`). The Dart API and event contract are
+  identical to Android — no code changes are required in your app.
+- Re-declared the `ios` platform in `pubspec.yaml` (`pluginClass: EliBleGattServerPlugin`),
+  now backed by a full native implementation.
+
+### iOS implementation notes
+- Mirrors the Android feature set: advertising, READ/WRITE/NOTIFY characteristic,
+  automatic welcome `payload` on subscription, 20-byte NOTIFY chunking with `BleTxEvent`,
+  and the full real-time event stream.
+- TX chunk pacing uses CoreBluetooth transmit-queue backpressure
+  (`peripheralManagerIsReadyToUpdateSubscribers`) instead of Android's fixed 30 ms delay.
+
+### iOS limitations & differences vs Android
+- **Foreground only** — no background execution / persistent notification. `isActive`
+  reflects that the peripheral is powered on and advertising.
+- **No device-name change** — `deviceName` is used only as the advertised local name
+  (`CBAdvertisementDataLocalNameKey`), and iOS omits it while backgrounded.
+- **No MAC / central name** — centrals are identified by their `identifier` (UUID), so
+  `address`/`from` is that UUID and `name` is always `"unknown"`.
+- **No manufacturer data** in the peripheral advertisement.
+- **"Connection" = notification subscription** — `device_connected` fires when a central
+  subscribes (also when the welcome `payload` is delivered); `device_disconnected` on unsubscribe.
+- Requires a **real device** — CoreBluetooth's peripheral role is unavailable on the iOS Simulator.
+
+### Setup
+- iOS apps must add `NSBluetoothAlwaysUsageDescription` to `ios/Runner/Info.plist`
+  (otherwise the app crashes when CoreBluetooth starts on iOS 13+).
+
+---
+
 ## 0.1.0
 
 ### Breaking changes
