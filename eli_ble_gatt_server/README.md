@@ -1,13 +1,13 @@
 # eli_ble_gatt_server
 
-A Flutter plugin that turns an **Android device into a BLE GATT Server** (peripheral). It handles advertising, exposes a custom service with a READ/WRITE/NOTIFY characteristic, receives data from connected clients, and streams all events to Flutter in real time.
+A Flutter plugin that turns a device into a **BLE GATT Server** (peripheral). It handles advertising, exposes a custom service with a READ/WRITE/NOTIFY characteristic, receives data from connected clients, and streams all events to Flutter in real time.
 
 ## Platform support
 
 | Platform | Supported |
 |----------|-----------|
 | Android  | ✅ API 21+ (BLE Peripheral Mode required) |
-| iOS      | ❌ Not yet |
+| iOS      | ✅ iOS 13+ (foreground only) |
 | Web      | ❌ No |
 
 ## Features
@@ -68,6 +68,31 @@ Future<void> requestBlePermissions() async {
   ].request();
 }
 ```
+
+## iOS setup
+
+### 1. Add the Bluetooth usage description to `ios/Runner/Info.plist`
+
+This key is **required** — without it the app crashes the moment CoreBluetooth starts on iOS 13+.
+
+```xml
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>This app uses Bluetooth to run a BLE GATT server and exchange data with nearby devices.</string>
+```
+
+### 2. Test on a real device
+
+CoreBluetooth's **peripheral role does not work on the iOS Simulator** — you must run on a physical iPhone/iPad.
+
+### iOS limitations & differences vs Android
+
+iOS exposes BLE peripheral functionality differently from Android. The Dart API and event contract are identical, but on iOS:
+
+- **No device-name change.** iOS does not allow changing the Bluetooth name; `deviceName` is used only as the advertised local name (`CBAdvertisementDataLocalNameKey`).
+- **No MAC / central name.** iOS only exposes the central's `identifier` (a UUID). In `device_connected`/`device_disconnected`/`ble_rx`, `address`/`from` is that UUID and `name` is always `"unknown"`.
+- **No manufacturer data** in the peripheral advertisement (Android's scan-response manufacturer data has no iOS equivalent).
+- **"Connection" = notification subscription.** A `device_connected` event is emitted when a central subscribes to notifications (which is also when the welcome `payload` is delivered); `device_disconnected` when it unsubscribes.
+- **Foreground only.** There is no foreground-service/persistent-notification concept; `isActive` reflects that the peripheral is powered on and advertising. The server stops advertising when the app is suspended.
 
 ## Quick start
 
@@ -206,8 +231,8 @@ EliBleGattServer.events.listen((event) {
 
 ## Limitations
 
-- **Android only.** iOS support is not available yet.
-- **BLE Peripheral Mode** must be supported by the device hardware (most modern Android phones support it; some tablets and emulators do not).
+- **BLE Peripheral Mode** must be supported by the device hardware (most modern Android phones support it; some tablets and emulators do not). On iOS this requires a real device (the Simulator has no BLE peripheral support).
+- **iOS runs foreground only** and has platform-specific differences — see [iOS setup](#ios-setup).
 - **TX chunk size** is fixed at 20 bytes (standard BLE MTU before negotiation). MTU negotiation is not yet exposed.
 - `sendMessage()` sends to **all** connected clients simultaneously. Per-device addressing is not yet supported.
 

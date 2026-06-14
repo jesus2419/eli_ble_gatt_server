@@ -4,17 +4,19 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'eli_ble_gatt_server'
-  s.version          = '0.0.1'
-  s.summary          = 'A new Flutter plugin project.'
+  s.version          = '0.1.0'
+  s.summary          = 'Turn the device into a BLE GATT server (peripheral).'
   s.description      = <<-DESC
-A new Flutter plugin project.
+A Flutter plugin that turns the device into a BLE GATT server (peripheral):
+advertises a configurable service/characteristic and supports READ/WRITE/NOTIFY.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/jesus2419/eli_ble_gatt_server'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'jesus2419' => 'jesus.osorio@urbani.com.mx' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
+  s.frameworks = 'CoreBluetooth'
   s.platform = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice.
